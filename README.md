@@ -1,10 +1,10 @@
-# AvalancheJS - The Avalanche Platform JavaScript Library
+# FlareJS - The Flare Platform JavaScript Library
 
 ## Overview
 
-AvalancheJS is a JavaScript Library for interfacing with the Avalanche Platform. It is built using TypeScript and intended to support both browser and Node.js. The AvalancheJS library allows you to issue commands to the Avalanche node APIs.
+FlareJS is a JavaScript Library for interfacing with the Flare Platform. It is built using TypeScript and intended to support both browser and Node.js. The FlareJS library allows you to issue commands to the Flare node APIs. This is an adaptation of the library [avalanchejs](https://github.com/ava-labs/avalanchejs) for Flare network.
 
-Using AvalancheJS, developers can:
+Using FlareJS, developers can:
 
 - Retrieve balances on addresses
 - Get UTXOs for addresses
@@ -12,33 +12,32 @@ Using AvalancheJS, developers can:
 - Issue signed transactions to the X-Chain, P-Chain, and C-Chain
 - Perform cross-chain swaps between the X, P and C chains
 - Add Validators and Delegators
-- Create Subnets and Blockchains
 
 ### Requirements
 
-AvalancheJS requires Node.js LTS version 20.11.1 or higher to compile.
+FlareJS requires Node.js LTS version 20.11.1 or higher to compile.
 
 ## Installation
 
 ### Using the NPM Package
 
-Add AvalancheJS to your project via `npm` or `yarn`.
+Add FlareJS to your project via `npm` or `yarn`.
 
 For installing via `npm`:
 
-`npm install --save @avalabs/avalanchejs`
+`npm install --save @flarenetwork/flarejs`
 
 For installing via `yarn`:
 
-`yarn add @avalabs/avalanchejs`
+`yarn add @flarenetwork/flarejs`
 
 ### Build from Repository
 
 You can also pull the repo down directly and build it from scratch.
 
-Clone the AvalancheJS repository:
+Clone the FlareJS repository:
 
-`git clone https://github.com/ava-labs/avalanchejs.git`
+`git clone https://github.com/flare-foundation/flarejs.git`
 
 Then build it:
 
@@ -48,18 +47,18 @@ or
 
 `yarn build`
 
-## Use AvalancheJS in Projects
+## Use FlareJS in Projects
 
-The AvalancheJS library can be imported into your existing project as follows:
+The FlareJS library can be imported into your existing project as follows:
 
 ```ts
-import { avm, pvm, evm } from '@avalabs/avalanchejs';
+import { avm, pvm, evm } from '@flarenetwork/flarejs';
 ```
 
 ## Importing Essentials
 
 ```ts
-import { avm /** X-chain */, pvm /** P-chain */, evm /** C-chain */, utils, secp256k1 } from "@avalabs/avalanchejs"
+import { avm /** X-chain */, pvm /** P-chain */, evm /** C-chain */, utils, secp256k1 } from "@flarenetwork/flarejs"
 
 // example calls
 const exportTx = avm.newExportTx(...) // constructs a new export tx from X

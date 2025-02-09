@@ -11,16 +11,25 @@ export const FujiName = 'fuji';
 export const TestnetName = 'testnet';
 export const UnitTestName = 'testing';
 export const LocalName = 'local';
+export const FlareName = 'flare';
+export const CostwoName = 'costwo';
+export const LocalFlareName = 'localflare';
+export const SongbirdName = 'songbird';
+export const CostonName = 'coston';
 
 export const MainnetID = 1;
 export const CascadeID = 2;
 export const DenaliID = 3;
 export const EverestID = 4;
 export const FujiID = 5;
-
+export const LocalID = 12345;
+export const FlareID = 14;
+export const CostwoID = 114;
+export const LocalFlareID = 162;
+export const SongbirdID = 5;
+export const CostonID = 7;
 export const TestnetID = FujiID;
 export const UnitTestID = 10;
-export const LocalID = 12345;
 
 export const MainnetHRP = 'avax';
 export const CascadeHRP = 'cascade';
@@ -30,15 +39,25 @@ export const FujiHRP = 'fuji';
 export const UnitTestHRP = 'testing';
 export const LocalHRP = 'local';
 export const FallbackHRP = 'custom';
+export const FlareHRP = 'flare';
+export const CostwoHRP = 'costwo';
+export const LocalFlareHRP = 'localflare';
+export const SongbirdHRP = 'songbird';
+export const CostonHRP = 'coston';
 
 export const NetworkIDToHRP = {
   [MainnetID]: MainnetHRP,
   [CascadeID]: CascadeHRP,
   [DenaliID]: DenaliHRP,
   [EverestID]: EverestHRP,
-  [FujiID]: FujiHRP,
+  // [FujiID]: FujiHRP, FujiID == SongbirdID
   [UnitTestID]: UnitTestHRP,
   [LocalID]: LocalHRP,
+  [FlareID]: FlareHRP,
+  [CostwoID]: CostwoHRP,
+  [LocalFlareID]: LocalFlareHRP,
+  [SongbirdID]: SongbirdHRP,
+  [CostonID]: CostonHRP,
 };
 
 /**

@@ -30,8 +30,11 @@ export class Info extends Api {
     return this.callRpc<GetNodeIpResponse>('getNodeIP');
   }
 
-  getNetworkId(): Promise<GetNetworkIdResponse> {
-    return this.callRpc<GetNetworkIdResponse>('getNetworkID');
+  async getNetworkId(): Promise<GetNetworkIdResponse> {
+    const { networkID } = await this.callRpc<GetNetworkIdResponse>(
+      'getNetworkID',
+    );
+    return { networkID: Number(networkID) };
   }
 
   getNetworkName(): Promise<GetNetworkNameResponse> {
