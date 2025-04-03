@@ -84,18 +84,21 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/flare-foundation/flarejs.git"
+    "url": "git+https://github.com/flare-foundation/flare-js.git"
   },
   "keywords": [
     "Flare",
     "blockchain",
-    "defi"
+    "defi",
+    "JS",
+    "Songbird",
+    "web3"
   ],
   "author": "",
   "bugs": {
-    "url": "https://github.com/flare-foundation/flarejs/issues"
+    "url": "https://github.com/flare-foundation/flare-js/issues"
   },
-  "homepage": "https://github.com/flare-foundation/flarejs#readme",
+  "homepage": "https://github.com/flare-foundation/flare-js#readme",
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
