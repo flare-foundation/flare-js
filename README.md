@@ -37,7 +37,7 @@ You can also pull the repo down directly and build it from scratch.
 
 Clone the FlareJS repository:
 
-`git clone https://github.com/flare-foundation/flarejs.git`
+`git clone https://github.com/flare-foundation/flare-js.git`
 
 Then build it:
 
