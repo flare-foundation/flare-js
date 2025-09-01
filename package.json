@@ -1,6 +1,6 @@
 {
   "name": "@flarenetwork/flarejs",
-  "version": "4.0.5",
+  "version": "4.0.6",
   "description": "Flare Platform JS Library",
   "main": "dist/index.cjs",
   "types": "dist/index.d.ts",
@@ -76,7 +76,7 @@
   },
   "packageManager": "yarn@1.22.19",
   "engines": {
-    "node": "^20"
+    "node": ">=20"
   },
   "volta": {
     "node": "20.11.0",
