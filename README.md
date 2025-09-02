@@ -15,7 +15,7 @@ Using FlareJS, developers can:
 
 ### Requirements
 
-FlareJS requires Node.js LTS version 22.0.0 or higher to compile.
+FlareJS requires Node.js LTS version 20.11.1 or higher to compile.
 
 ## Installation
 
