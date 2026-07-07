@@ -1,6 +1,10 @@
 import type { SpendReducerFunction } from './types';
+import { LocalID, LocalFlareID } from '../../../../constants/networkIDs';
 
-const DEFAULT_LOCAL_DEVNET_ID = 12345;
+// Local dev networks where a freshly-booted node reports feeState.capacity: 0
+// (no P-chain blocks yet → time doesn't advance → capacity never refills).
+// Upstream only recognizes LocalID (12345); Flare's local network is LocalFlareID (162).
+const LOCAL_DEVNET_IDS = new Set<number>([LocalID, LocalFlareID]);
 
 /**
  * Verify that gas usage is within limits.
@@ -13,7 +17,7 @@ export const verifyGasUsage: SpendReducerFunction = (
   context,
 ) => {
   const verifyError = spendHelper.verifyGasUsage(
-    context.networkID === DEFAULT_LOCAL_DEVNET_ID,
+    LOCAL_DEVNET_IDS.has(context.networkID),
   );
 
   if (verifyError) {
