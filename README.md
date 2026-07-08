@@ -1,3 +1,7 @@
+<p align="left">
+  <a href="https://flare.network/" target="blank"><img src="https://content.flare.network/Flare-2.svg" width="300" alt="Flare Logo" /></a>
+</p>
+
 # FlareJS - The Flare Platform JavaScript Library
 
 ## Overview
