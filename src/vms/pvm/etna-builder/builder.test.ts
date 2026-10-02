@@ -47,12 +47,13 @@ import {
   DisableL1ValidatorTx,
   SetL1ValidatorWeightTx,
   RegisterL1ValidatorTx,
+  AddAutoRenewedValidatorTx,
+  SetAutoRenewedValidatorConfigTx,
 } from '../../../serializable/pvm';
 import { BaseTx as AvaxBaseTx } from '../../../serializable/avax';
 import { hexToBuffer } from '../../../utils';
-import type { UnsignedTx } from '../../common';
-import { calculateFee } from '../txs/fee/calculator';
 import {
+  newAddAutoRenewedValidatorTx,
   newAddPermissionlessDelegatorTx,
   newAddPermissionlessValidatorTx,
   newAddSubnetValidatorTx,
@@ -66,6 +67,7 @@ import {
   newIncreaseL1ValidatorBalanceTx,
   newRegisterL1ValidatorTx,
   newRemoveSubnetValidatorTx,
+  newSetAutoRenewedValidatorConfigTx,
   newSetL1ValidatorWeightTx,
   newTransferSubnetOwnershipTx,
 } from './builder';
@@ -81,120 +83,10 @@ import {
   feeState as testFeeState,
   proofOfPossession,
 } from '../../../fixtures/pvm';
-import type { FeeState } from '../models';
 import { L1Validator } from '../../../serializable/fxs/pvm/L1Validator';
 import { PChainOwner } from '../../../serializable/fxs/pvm/pChainOwner';
 
-const addTransferableAmounts = (
-  transferableItems:
-    | readonly TransferableOutput[]
-    | readonly TransferableInput[],
-): Map<string, bigint> => {
-  const amounts = new Map<string, bigint>();
-
-  for (const transferable of transferableItems) {
-    const assetId = transferable.getAssetId();
-
-    amounts.set(assetId, (amounts.get(assetId) ?? 0n) + transferable.amount());
-  }
-
-  return amounts;
-};
-
-const addAmounts = (...amounts: Map<string, bigint>[]): Map<string, bigint> => {
-  const amount = new Map<string, bigint>();
-
-  for (const m of amounts) {
-    for (const [assetID, value] of m) {
-      amount.set(assetID, (amount.get(assetID) ?? 0n) + value);
-    }
-  }
-
-  return amount;
-};
-
-/**
- * Given a bigint, returns a human-readable string of the value.
- *
- * @example
- * ```ts
- * formatBigIntToHumanReadable(123456789n); // '123_456_789n'
- * formatBigIntToHumanReadable(1234567890n); // '1_234_567_890n'
- * ```
- */
-const formatBigIntToHumanReadable = (value: bigint): string => {
-  const bigIntStr = value.toString();
-
-  return `${bigIntStr.replace(/\B(?=(\d{3})+(?!\d))/g, '_')}n`;
-};
-
-/**
- * Calculates the required fee for the unsigned transaction
- * and verifies that the burned amount is exactly the required fee.
- */
-const checkFeeIsCorrect = ({
-  unsignedTx,
-  inputs,
-  outputs,
-  feeState,
-  additionalInputs = [],
-  additionalOutputs = [],
-  additionalFee = 0n,
-}: {
-  unsignedTx: UnsignedTx;
-  inputs: readonly TransferableInput[];
-  outputs: readonly TransferableOutput[];
-  feeState: FeeState;
-  additionalInputs?: readonly TransferableInput[];
-  additionalOutputs?: readonly TransferableOutput[];
-  additionalFee?: bigint;
-}): [
-  amountConsumed: Record<string, string>,
-  expectedAmountConsumed: Record<string, string>,
-  expectedFee: bigint,
-] => {
-  const amountConsumed = addTransferableAmounts([
-    ...inputs,
-    ...additionalInputs,
-  ]);
-  const amountProduced = addTransferableAmounts([
-    ...outputs,
-    ...additionalOutputs,
-  ]);
-
-  const expectedFee = calculateFee(
-    unsignedTx.getTx(),
-    testContext.platformFeeConfig.weights,
-    feeState.price,
-  );
-
-  const expectedAmountBurned = addAmounts(
-    new Map([[testAvaxAssetID.toString(), expectedFee + additionalFee]]),
-  );
-
-  const expectedAmountConsumed = addAmounts(
-    amountProduced,
-    expectedAmountBurned,
-  );
-
-  // Convert each map into a object with a stringified bigint value.
-  const safeExpectedAmountConsumed = Object.fromEntries(
-    [...expectedAmountConsumed].map(([k, v]) => [
-      k,
-      formatBigIntToHumanReadable(v),
-    ]),
-  );
-
-  const safeAmountConsumed = Object.fromEntries(
-    [...amountConsumed].map(([k, v]) => [k, formatBigIntToHumanReadable(v)]),
-  );
-
-  return [
-    safeAmountConsumed,
-    safeExpectedAmountConsumed,
-    expectedFee + additionalFee,
-  ];
-};
+import { checkFeeIsCorrect } from './utils/feeForTesting';
 
 describe('./src/vms/pvm/etna-builder/builder.test.ts', () => {
   const nodeId = 'NodeID-2m38qc95mhHXtrhjyGbe7r2NhniqHHJRB';
@@ -809,6 +701,129 @@ describe('./src/vms/pvm/etna-builder/builder.test.ts', () => {
       expectTxs(unsignedTx.getTx(), expectedTx);
     });
 
+    test('newAddPermissionlessDelegator - with additionalOutputs', () => {
+      const utxoInputAmt = AvaxToNAvax(2);
+      const stakeAmount = 1_800_000n;
+      const feeOutputAmt = 50_000n;
+      const escrowAddressBytes = hexToBuffer('0x1234567890abcdef1234');
+
+      const additionalOutputs = [
+        TransferableOutput.fromNative(testContext.avaxAssetID, feeOutputAmt, [
+          escrowAddressBytes,
+        ]),
+      ];
+
+      const unsignedTx = newAddPermissionlessDelegatorTx(
+        {
+          additionalOutputs,
+          end: 120n,
+          feeState,
+          fromAddressesBytes,
+          nodeId,
+          memo,
+          rewardAddresses: [],
+          start: 0n,
+          subnetId: PrimaryNetworkID.toString(),
+          utxos: [getValidUtxo(new BigIntPr(utxoInputAmt))],
+          weight: stakeAmount,
+        },
+        testContext,
+      );
+
+      const { baseTx, stake } =
+        unsignedTx.getTx() as AddPermissionlessDelegatorTx;
+      const { inputs, outputs } = baseTx;
+
+      // additionalOutputs should be included in baseTx outputs
+      const feeOutput = outputs.find((o) => o.amount() === feeOutputAmt);
+      expect(feeOutput).toBeDefined();
+      expect(feeOutput?.assetId.toString()).toEqual(testContext.avaxAssetID);
+
+      // Total outputs should include change + fee output
+      expect(outputs.length).toBeGreaterThanOrEqual(2);
+
+      // fee output is already in baseTx.outputs; only stake is outside
+      const [amountConsumed, expectedAmountConsumed] = checkFeeIsCorrect({
+        unsignedTx,
+        inputs,
+        outputs,
+        additionalOutputs: stake,
+        feeState,
+      });
+
+      expect(amountConsumed).toEqual(expectedAmountConsumed);
+    });
+
+    test('newAddPermissionlessDelegator - with additionalOutputs of mixed assetIds', () => {
+      const utxoInputAmt = AvaxToNAvax(2);
+      const stakeAmount = 1_800_000n;
+      const avaxFeeAmt = 50_000n;
+      const subnetTokenAmt = 30_000n;
+      const subnetTokenId = Id.fromHex('0102');
+      const escrowAddressBytes = hexToBuffer('0x1234567890abcdef1234');
+
+      const additionalOutputs = [
+        TransferableOutput.fromNative(testContext.avaxAssetID, avaxFeeAmt, [
+          escrowAddressBytes,
+        ]),
+        TransferableOutput.fromNative(
+          subnetTokenId.toString(),
+          subnetTokenAmt,
+          [escrowAddressBytes],
+        ),
+      ];
+
+      const unsignedTx = newAddPermissionlessDelegatorTx(
+        {
+          additionalOutputs,
+          end: 120n,
+          feeState,
+          fromAddressesBytes,
+          nodeId,
+          memo,
+          rewardAddresses: [],
+          start: 0n,
+          subnetId: PrimaryNetworkID.toString(),
+          utxos: [
+            getValidUtxo(new BigIntPr(utxoInputAmt)),
+            getValidUtxo(new BigIntPr(2n * subnetTokenAmt), subnetTokenId),
+          ],
+          weight: stakeAmount,
+        },
+        testContext,
+      );
+
+      const { baseTx, stake } =
+        unsignedTx.getTx() as AddPermissionlessDelegatorTx;
+      const { inputs, outputs } = baseTx;
+
+      // Both additional outputs should be present in baseTx outputs
+      const avaxFeeOutput = outputs.find(
+        (o) =>
+          o.assetId.toString() === testContext.avaxAssetID &&
+          o.amount() === avaxFeeAmt,
+      );
+      expect(avaxFeeOutput).toBeDefined();
+
+      const subnetTokenOutput = outputs.find(
+        (o) =>
+          o.assetId.toString() === subnetTokenId.toString() &&
+          o.amount() === subnetTokenAmt,
+      );
+      expect(subnetTokenOutput).toBeDefined();
+
+      // fee output and subnet token output are already in baseTx.outputs; only stake is outside
+      const [amountConsumed, expectedAmountConsumed] = checkFeeIsCorrect({
+        unsignedTx,
+        inputs,
+        outputs,
+        additionalOutputs: stake,
+        feeState,
+      });
+
+      expect(amountConsumed).toEqual(expectedAmountConsumed);
+    });
+
     test('newAddPermissionlessDelegator - subnet', () => {
       const utxoInputAmt = AvaxToNAvax(2);
       const stakeAmount = 1_800_000n;
@@ -1378,6 +1393,122 @@ describe('./src/vms/pvm/etna-builder/builder.test.ts', () => {
         Id.fromString(validationId),
         Input.fromNative([0]),
       );
+      expectTxs(unsignedTx.getTx(), expectedTx);
+    });
+  });
+
+  describe('AddAutoRenewedValidatorTx', () => {
+    it('should create an AddAutoRenewedValidatorTx', () => {
+      const utxoInputAmt = AvaxToNAvax(2);
+      const stakeAmount = 1_800_000n;
+      const shares = 20_000;
+      const autoCompoundRewardShares = 500_000;
+      const period = 1_209_600n; // 14 days in seconds
+
+      const unsignedTx = newAddAutoRenewedValidatorTx(
+        {
+          delegatorRewardsOwner: [toAddress],
+          feeState,
+          fromAddressesBytes,
+          nodeId,
+          publicKey: blsPublicKeyBytes(),
+          rewardAddresses: [toAddress],
+          shares,
+          signature: blsSignatureBytes(),
+          utxos: [getValidUtxo(new BigIntPr(utxoInputAmt))],
+          weight: stakeAmount,
+          ownerAddresses: [toAddress],
+          autoCompoundRewardShares,
+          period,
+        },
+        testContext,
+      );
+
+      const { baseTx, stake } = unsignedTx.getTx() as AddAutoRenewedValidatorTx;
+      const { inputs, outputs } = baseTx;
+
+      const [amountConsumed, expectedAmountConsumed, expectedFee] =
+        checkFeeIsCorrect({
+          unsignedTx,
+          inputs,
+          outputs,
+          additionalOutputs: stake,
+          feeState,
+        });
+
+      expect(amountConsumed).toEqual(expectedAmountConsumed);
+
+      const expectedTx = new AddAutoRenewedValidatorTx(
+        AvaxBaseTx.fromNative(
+          testContext.networkID,
+          testContext.pBlockchainID,
+          [getTransferableOutForTest(utxoInputAmt - stakeAmount - expectedFee)],
+          [getTransferableInputForTest(utxoInputAmt)],
+          new Uint8Array(),
+        ),
+        NodeId.fromString(nodeId),
+        new Signer(proofOfPossession()),
+        [getTransferableOutForTest(stakeAmount)],
+        OutputOwners.fromNative([toAddress], 0n, 1),
+        OutputOwners.fromNative([toAddress], 0n, 1),
+        OutputOwners.fromNative([toAddress], 0n, 1),
+        new Int(shares),
+        new Int(autoCompoundRewardShares),
+        new BigIntPr(period),
+      );
+
+      expectTxs(unsignedTx.getTx(), expectedTx);
+    });
+  });
+
+  describe('SetAutoRenewedValidatorConfigTx', () => {
+    it('should create a SetAutoRenewedValidatorConfigTx', () => {
+      const utxoInputAmt = AvaxToNAvax(2);
+      const validatorTxId = 'test';
+      const auth = [0, 1];
+      const autoCompoundRewardShares = 750_000;
+      const period = 2_419_200n; // 28 days in seconds
+
+      const unsignedTx = newSetAutoRenewedValidatorConfigTx(
+        {
+          fromAddressesBytes,
+          feeState,
+          utxos: [getValidUtxo(new BigIntPr(utxoInputAmt))],
+          validatorTxId,
+          auth,
+          autoCompoundRewardShares,
+          period,
+        },
+        testContext,
+      );
+
+      const { baseTx } = unsignedTx.getTx() as SetAutoRenewedValidatorConfigTx;
+      const { inputs, outputs } = baseTx;
+
+      const [amountConsumed, expectedAmountConsumed, expectedFee] =
+        checkFeeIsCorrect({
+          unsignedTx,
+          inputs,
+          outputs,
+          feeState,
+        });
+
+      expect(amountConsumed).toEqual(expectedAmountConsumed);
+
+      const expectedTx = new SetAutoRenewedValidatorConfigTx(
+        AvaxBaseTx.fromNative(
+          testContext.networkID,
+          testContext.pBlockchainID,
+          [getTransferableOutForTest(utxoInputAmt - expectedFee)],
+          [getTransferableInputForTest(utxoInputAmt)],
+          new Uint8Array(),
+        ),
+        Id.fromString(validatorTxId),
+        Input.fromNative(auth),
+        new Int(autoCompoundRewardShares),
+        new BigIntPr(period),
+      );
+
       expectTxs(unsignedTx.getTx(), expectedTx);
     });
   });

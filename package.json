@@ -1,6 +1,6 @@
 {
   "name": "@flarenetwork/flarejs",
-  "version": "4.1.1",
+  "version": "5.2.0",
   "description": "Flare Platform JS Library",
   "main": "dist/index.cjs",
   "types": "dist/index.d.ts",
@@ -30,9 +30,9 @@
     "typecheck": "tsc --skipLibCheck --noEmit",
     "example": "NODE_OPTIONS='--loader ts-node/esm' ts-node examples/c-chain/export.ts",
     "example:generateKeys": "NODE_OPTIONS='--loader ts-node/esm' ts-node examples/generate-keys.ts",
-    "example:createSubnetTx": "NODE_OPTIONS='--loader ts-node/esm' ts-node examples/p-chain/etna/createSubnet.ts",
-    "example:createChainTx": "NODE_OPTIONS='--loader ts-node/esm' ts-node examples/p-chain/etna/createChain.ts",
-    "example:convertSubnetTx": "NODE_OPTIONS='--loader ts-node/esm' ts-node examples/p-chain/etna/convertSubnet.ts",
+    "example:createSubnetTx": "NODE_OPTIONS='--loader ts-node/esm' ts-node examples/p-chain/createSubnet.ts",
+    "example:createChainTx": "NODE_OPTIONS='--loader ts-node/esm' ts-node examples/p-chain/createChain.ts",
+    "example:convertSubnetTx": "NODE_OPTIONS='--loader ts-node/esm' ts-node examples/p-chain/convertSubnet.ts",
     "prepare": "husky install"
   },
   "dependencies": {
@@ -50,11 +50,10 @@
     "@rollup/plugin-typescript": "11.1.6",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/commit-analyzer": "13.0.0",
-    "@semantic-release/git": "10.0.1",
-    "@types/jest": "29.5.11",
-    "@types/node": "20.11.25",
     "@semantic-release/github": "11.0.0",
     "@semantic-release/npm": "12.0.1",
+    "@types/jest": "29.5.11",
+    "@types/node": "20.11.25",
     "@typescript-eslint/eslint-plugin": "6.18.1",
     "@typescript-eslint/parser": "6.18.1",
     "commitizen": "4.3.1",
@@ -72,6 +71,7 @@
     "rollup-plugin-filesize": "10.0.0",
     "semantic-release": "24.2.0",
     "ts-node": "10.9.2",
+    "tslib": "2.8.1",
     "typescript": "5.3.3",
     "vitest": "^2.1.4"
   },

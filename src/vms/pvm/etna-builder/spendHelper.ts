@@ -11,11 +11,12 @@ import {
   dimensionsToGas,
 } from '../../common/fees/dimensions';
 import { consolidateOutputs } from '../../utils/consolidateOutputs';
+import type { FeeState } from '../models';
 import { getInputComplexity, getOutputComplexity } from '../txs/fee';
 
 export interface SpendHelperProps {
   changeOutputs: readonly TransferableOutput[];
-  gasPrice: bigint;
+  feeState: FeeState;
   initialComplexity: Dimensions;
   inputs: readonly TransferableInput[];
   shouldConsolidateOutputs: boolean;
@@ -32,7 +33,7 @@ export interface SpendHelperProps {
  * @class
  */
 export class SpendHelper {
-  private readonly gasPrice: bigint;
+  private readonly feeState: FeeState;
   private readonly initialComplexity: Dimensions;
   private readonly shouldConsolidateOutputs: boolean;
   private readonly toBurn: Map<string, bigint>;
@@ -47,7 +48,7 @@ export class SpendHelper {
 
   constructor({
     changeOutputs,
-    gasPrice,
+    feeState,
     initialComplexity,
     inputs,
     shouldConsolidateOutputs,
@@ -56,7 +57,7 @@ export class SpendHelper {
     toStake,
     weights,
   }: SpendHelperProps) {
-    this.gasPrice = gasPrice;
+    this.feeState = feeState;
     this.initialComplexity = initialComplexity;
     this.shouldConsolidateOutputs = shouldConsolidateOutputs;
     this.toBurn = toBurn;
@@ -217,13 +218,13 @@ export class SpendHelper {
   }
 
   /**
-   * Calculates the fee for the SpendHelper based on its complexity and gas price.
+   * Calculates the gas usage for the SpendHelper based on its complexity and the weights.
    * Provide an empty change output as a parameter to calculate the fee as if the change output was already added.
    *
    * @param {TransferableOutput} additionalOutput - The change output that has not yet been added to the SpendHelper.
-   * @returns {bigint} The fee for the SpendHelper.
+   * @returns {bigint} The gas usage for the SpendHelper.
    */
-  calculateFee(additionalOutput?: TransferableOutput): bigint {
+  private calculateGas(additionalOutput?: TransferableOutput): bigint {
     this.consolidateOutputs();
 
     const gas = dimensionsToGas(
@@ -233,7 +234,22 @@ export class SpendHelper {
       this.weights,
     );
 
-    return gas * this.gasPrice;
+    return gas;
+  }
+
+  /**
+   * Calculates the fee for the SpendHelper based on its complexity and gas price.
+   * Provide an empty change output as a parameter to calculate the fee as if the change output was already added.
+   *
+   * @param {TransferableOutput} additionalOutput - The change output that has not yet been added to the SpendHelper.
+   * @returns {bigint} The fee for the SpendHelper.
+   */
+  calculateFee(additionalOutput?: TransferableOutput): bigint {
+    const gas = this.calculateGas(additionalOutput);
+
+    const gasPrice = this.feeState.price;
+
+    return gas * gasPrice;
   }
 
   /**
@@ -275,6 +291,29 @@ export class SpendHelper {
 
       return new Error(
         `Insufficient funds! Provided UTXOs need ${amount} more units of asset ${assetId}`,
+      );
+    }
+
+    return null;
+  }
+
+  /**
+   * Verifies that gas usage does not exceed the fee state maximum.
+   *
+   * @param {boolean} allowWithZeroCapacity - Whether to skip this check if platform.getFeeState reports capacity is 0.
+   * @returns {Error | null} An error if gas usage exceeds maximum, null otherwise.
+   */
+  verifyGasUsage(allowWithZeroCapacity: boolean = false): Error | null {
+    // On a freshly booted local network with no P-chain transactions, no blocks are produced → time doesn't advance → capacity never refills.
+    // platform.getFeeState RPC calls keep returning capacity: 0, which would prevent the transaction from being submitted.
+    if (allowWithZeroCapacity && this.feeState.capacity === 0n) {
+      return null;
+    }
+
+    const gas = this.calculateGas();
+    if (this.feeState.capacity < gas) {
+      return new Error(
+        `Gas usage of transaction (${gas.toString()}) exceeds capacity (${this.feeState.capacity.toString()})`,
       );
     }
 

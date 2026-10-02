@@ -37,19 +37,17 @@ For installing via `yarn`:
 
 ### Build from Repository
 
-You can also pull the repo down directly and build it from scratch.
+You can also pull the repo down directly and build it from scratch. Building from the repository requires [pnpm](https://pnpm.io/) (e.g. via `corepack enable`).
 
 Clone the FlareJS repository:
 
 `git clone https://github.com/flare-foundation/flare-js.git`
 
-Then build it:
+Then install the dependencies and build it:
 
-`npm run build`
+`pnpm install`
 
-or
-
-`yarn build`
+`pnpm build`
 
 ## Use FlareJS in Projects
 
